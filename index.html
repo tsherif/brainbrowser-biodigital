@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">  
+<head>
+  <meta charset="utf-8">
+  <title>BrainBrowser: Design Philosophy and Development Practices</title>
+  <link rel="stylesheet" href="css/reveal.min.css">
+  <link rel="stylesheet" href="css/theme/default.css" id="theme"> 
+  <link rel="stylesheet" href="plugin/highlight/styles/docco.css"> 
+  <link rel="icon" type="image/png" href="img/brainbrowser.png">
+  <style>
+    #brainbrowser {
+      width: 450px;
+      height: 450px;
+      margin: 40px auto;
+    }
+
+    .reveal .slide-number {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .reveal section img {
+      max-height: 600px;
+    }
+
+    .reveal pre {
+      box-shadow: none;
+    }
+
+    .reveal .me {
+      margin-top: 42px;
+    }
+
+    .reveal ul ul {
+      font-size: 0.8em;
+    }
+
+    .reveal img {
+      height: 200px;
+    }
+
+    #bb-logo {
+      background-color: black;
+    }
+
+    #html5, #webgl {
+      background-color: white;
+    }
+
+    #diagram {
+      height: 450px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1>BrainBrowser</h1>
+        <h3>Design Philosophy and Development Practices</h3>
+        <p>Tarek Sherif</p>
+      </section>
+
+      <section>
+        <h2>Outline</h2>
+        <ul>
+          <li>What is BrainBrowser?</li>
+          <li>Architecture</li>
+          <li>Development Practices</li>
+          <li>Getting the Word Out</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>What is BrainBrowser?</h2>
+      </section>
+
+      <section>
+        <h2>BrainBrowser is...</h2>
+        <div id="brainbrowser">
+        </div>
+      </section>
+
+      <section>
+        <h2>BrainBrowser is...</h2>
+        <ul>
+          <li>Open-source JavaScript library exposing web-based tools for neuroimaging</li>
+          <li>
+            Key technologies:
+            <ul>
+              <li>HTML5 Canvas 2D</li>
+              <li>WebGL</li>
+              <li>Web Workers</li>
+            </ul>
+          </li>
+          <img id="bb-logo" src="img/bb-logo-white-mini.png">
+          <img id="webgl" src="img/webgl-logo.png">
+          <img id="html5" src="img/HTML5.png">
+      </section>
+
+      <section>
+        <h2>BrainBrowser is...</h2>
+        <ul>
+          <li>
+            Volume Viewer
+            <ul>
+              <li>Explore volumetric data through orthogonal slices</li>
+            </ul>
+          </li>
+          <li>
+            Surface Viewer
+            <ul>
+              <li>Explore surface data in real-time 3D</li>
+            </ul>
+          </li>
+        </ul>
+        <img src="img/volume-viewer.png">
+        <img src="img/surface-viewer.png">
+      </section>
+      
+      <section>
+        <h2>Background: Neuroimaging</h2>
+        <h3>Typical Workflow</h3>
+        <ul>
+          <li>
+            Acquisition
+            <ul>
+              <li>Volume of voxels representing intensity of the MR signal</li>
+              <li>Intensity can represent structural, activation or diffusion patterns</li>
+            </ul>
+          </li>
+          <li>
+            Processing
+            <ul>
+              <li>
+                Extract features of interest (e.g. surfaces, measurements)
+              </li>
+            </ul>
+          </li>
+          <li>
+            Visualization
+            <ul>
+              <li>Explore the data</li>
+              <li>Quality control</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Volume Viewer</h2>
+        <ul>
+          <li>Display orthogonal 2D slices of a 3D volume</li>
+          <li>Uses HTML5 Canvas 2D for image processing and display</li>
+          <li>
+            <a href="https://brainbrowser.cbrain.mcgill.ca/volume-viewer" target="_blank">
+              https://brainbrowser.cbrain.mcgill.ca/volume-viewer
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Surface Viewer</h2>
+        <ul>
+          <li>Real-time display of 3D surfaces</li>
+          <li>Visualize various data maps on loaded surfaces</li>
+          <li>WebGL for rendering using the three.js library</li>
+          <li>Web Workers used for data parsing</li>
+          <li>
+            <a href="https://brainbrowser.cbrain.mcgill.ca/surface-viewer" target="_blank">
+              https://brainbrowser.cbrain.mcgill.ca/surface-viewer
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Architecture</h2>
+      </section>
+
+      <section>
+        <h2>Software Requirements</h2>
+        <ul>
+          <li>Handle large datasets</li>
+          <li>Multiple data formats (parse on the fly)</li>
+          <li>Load from local file system</li>
+          <li>Dynamic loading based on user interaction</li>
+          <li>
+            Colorize per-vertex scalar data
+            <ul>
+              And allow users to manipulate that colorization
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Code</h2>
+        <pre>
+          <code class="javascript">
+  BrainBrowser.SurfaceViewer.start("visualization-div", function(viewer) {
+    viewer.render();
+
+    viewer.loadColorMapFromURL("models/spectral.txt");
+    
+    viewer.loadModelFromURL("models/brain.obj", {
+      format: "mniobj",
+      complete: function() {
+        viewer.loadIntensityDataFromURL("models/cortical-thickness.txt");
+      }
+    });
+
+  });
+        </code>
+      </pre>
+      </section>
+
+
+      <section>
+        <h2>Pipeline</h2>
+        <ul>
+          <li>Load geometry</li>
+          <li>Load per-vertex data</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Geometry Pipeline</h2>
+        <img id="diagram" src="img/geometry-diagram.png">
+      </section>
+
+      <section>
+        <h2>Geometry Pipeline</h2>
+        <ul>
+          <li>
+            Load geometry
+            <ul>
+              <li>List of vertices, normals, indices, colors</li>
+              <li>Loaded over the network or from the local file system</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Geometry Pipeline</h2>
+        <ul>
+          <li>
+            Parse geometry
+            <ul>
+              <li>One Web Worker script for each supported data format</li>
+              <li>Parse external geometry description into internal object model</li>
+              <li>Plugin framework</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Web Workers</h2>
+        <ul>
+          <li>
+            Create multiple threads in the browser
+            <ul>
+              <li>Parrallel processing</li>
+            </ul>
+          </li>
+          <li>Normally have to do a structured clone to move data between threads</li>
+          <li>This can be slow for large data</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Transferable Objects</h2>
+        <ul>
+          <li>
+            ArrayBuffers can be "transferred" between threads
+            <ul>
+              <li>Reference passed, no copying</li>
+              <li>Buffer no longer available in original thread</li>
+            </ul>
+          </li>
+        </ul>
+        <pre>
+          <code class="javascript">
+  var worker = new Worker(workerUrl);
+  var data = new Float32Array(raw);
+
+  worker.postMessage(data, data.buffer);
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>Dealing with Indices</h2>
+        <ul>
+          <li>
+            Core WebGL 1.0 spec limits indices to 16 bits
+            <ul>
+              <li>Maximum of 65,536 vertices</li>
+            </ul>
+          </li>
+          <li>
+            Neurological surface geometry can get much bigger
+            <ul>
+              <li>DTI demo model contains 560,674 vertices</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>OES_element_index_uint</h2>
+        <ul>
+          <li>WebGL extension that allows 32-bit indices</li>
+          <li>
+            Widely (but not universally) available
+            <ul>
+              <li><a href="http://webglstats.com/">WebGL Stats</a> reports 96% support</li>
+            </ul>
+          </li>
+          <li>Will become core in WebGL 2.0</li>
+        </ul>
+        <pre>
+          <code class="javascript">
+  gl.getExtension("OES_element_index_uint");
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>Two Options</h2>
+        <ul>
+          <li>If OES_element_index_uint is available, use it</li>
+          <li>If not, "de-index" the model in a Web Worker</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Per-vertex Data Pipeline</h2>
+        <h3></h3>
+        <img id="diagram" src="img/intensity-diagram.png">
+      </section>
+
+      <section>
+        <h2>Per-vertex Data Pipeline</h2>
+        <ul>
+          <li>
+            Load color map
+            <ul>
+              <li>Array of colors</li>
+              <li>Used to colorize scalar data</li>
+              <li>Loaded over the network or from the local file system</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Per-vertex Data Pipeline</h2>
+        <ul>
+          <li>
+            Load per-vertex data
+            <ul>
+              <li>List of per-vertex scalar values</li>
+              <li>Loaded over the network or from the local file system</li>
+              <li>One Web Worker script per supported format</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Per-vertex Data Pipeline</h2>
+        <ul>
+          <li>
+            Map colors
+            <ul>
+              <li>Interpolate per-vertex scalars into color array</li>
+              <li>Apply colors to vertices</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Web Service</h2>
+        <ul>
+          <li>Request widget HTML</li>
+          <li>
+            Request includes specific BrainBrowser version
+            <ul>
+              Stabilizes code received by clients 
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Web Service</h2>
+        <ul>
+          <li>Some options available via request parameters</li>
+          <li>Optional callback for full access to JavaScript API</li>
+        </ul>
+        <pre>
+          <code class="javascript">
+  $("#web-service").load(
+    "https://brainbrowser.cbrain.mcgill.ca/surface-viewer-widget?" + 
+    "version=2.3.0&amp;" +
+    "viewer_callback=myCallback" 
+  );
+
+  function myCallback(viewer) {
+    viewer.setWireframe(true);
+  }
+          </code>
+        </pre>
+      </section>
+
+      <section>
+        <h2>Development Practices</h2>
+      </section>
+
+            <section>
+        <h2>Development Workflow</h2>
+        <ul>
+          <li>Every developer gets their own fork of the repo</li>
+          <li>Create a branch for each feature</li>
+          <li>Make pull requests from feature branch to main repo</li>
+          <li>Pull request review and discussion</li>
+          <li>Merge</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Release Process</h2>
+        <ul>
+          <li>
+            When code is stable and there are enough new features
+            <ul>
+              <li>(Decision is pretty arbitrary)</li>
+            </ul>
+          </li>
+          <li>
+            Bump the version number
+            <ul>
+              <li>Semantic versioning</li>
+            </ul>
+          </li>
+          <li>Build</li>
+          <li>Commit the new build and <a href="https://github.com/aces/brainbrowser/releases" target="_blank">tag the release</a></li>
+          <li>Keep old versions for the web service</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Development Tools</h2>
+        <ul>
+          <li><a href="https://github.com/aces/brainbrowser/blob/master/package.json"  target="_blank">package.json</a> for meta-information</li>
+          <li><a href="https://github.com/aces/brainbrowser/blob/master/Gruntfile.js"  target="_blank">Grunt task runner</a></li>
+          <li>jshint for static analysis</li>
+          <li>uglify for builds</li>
+          <li>qUnit for testing</li>
+          <li>docular for <a href="https://brainbrowser.cbrain.mcgill.ca/docs" target="_blank">documentation</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Continuous Integration using Travis</h2>
+        <ul>
+          <li>
+            Give Travis a command to run tests in the repo
+            <ul>
+              <li>In BrainBrowser, it ran jshint and qUnit</li>
+            </ul>
+          </li>
+          <li>
+            Integrates with GitHub
+            <ul>
+              <li>Run tests on every commit or pull request</li>
+              <li>Displays <a href="https://github.com/aces/brainbrowser/pulls" target="_blank">icons in GitHub</a> showing whether tests pass in pull requests</li>
+              <li>Provides an <a href="https://github.com/aces/brainbrowser" target="_blank">icon for the README</a> indicating whether the default branch is passing</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Coding Style</h2>
+        <ul>
+          <li>Use a <a href="https://github.com/aces/brainbrowser/blob/master/STYLE.md" target="_blank">style guide</a></li>
+          <li>Always "use strict"</li>
+          <li>Always use semicolons</li>
+          <li>Avoid contructors and "this"</li>
+          <li>Don't use "single var" pattern</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Getting the Word Out</h2>  
+      </section>
+
+      <section>
+        <h2>Social Media</h2>
+        <ul>
+          <li>
+            Facebook, Twitter, LinkedIn
+          </li>
+          <li>
+            Tie into topics people are excited about
+            <ul>
+              <li>#webgl, #javascript, #openscience</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Meetups and Hackathons</h2>
+        <ul>
+          <li>Meetups related to JavaScript, HTML5, Health Technology</li>
+          <li>
+            Neurology and Visualization Hackathons
+            <ul>
+              <li>Developers actually use the API</li>
+              <li>Get feedback</li>
+              <li>Get ideas for future development</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Publications</h2>
+        <ul>
+          <li>
+            Scientific paper in Frontiers in Neuroinformatics
+          </li>
+          <li>
+            Chapter in upcoming book, WebGL Insights
+            <ul>
+              <li>Happened through a Twitter conversation with Lindsay!</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h1>Thanks!</h1>
+      </section>
+      
+    </div>
+  </div>
+  <script src="lib/js/head.min.js"></script>
+  <script src="js/reveal.min.js"></script>
+  <script src="js/highlight.min.js"></script>
+  <script src="js/three.r66.min.js"></script>
+  <script src="js/brainbrowser-2.1.1/brainbrowser.surface-viewer.min.js"></script>
+  <script>
+    Reveal.initialize({
+      history: true,
+      slideNumber: true,
+      controls: false
+    });
+
+    Reveal.addEventListener("slidechanged", function(event) {
+      window.onresize();
+    });
+
+    hljs.initHighlightingOnLoad();
+
+    BrainBrowser.config.set("worker_dir", "js/brainbrowser-2.1.1/workers");
+
+
+    BrainBrowser.SurfaceViewer.start("brainbrowser", function(viewer) {
+      viewer.render();
+
+      viewer.loadColorMapFromURL("models/spectral.txt");
+
+      viewer.loadModelFromURL("models/brain.obj", {
+        format: "mniobj",
+        complete: function() {
+          viewer.loadIntensityDataFromURL("models/cortical-thickness.txt");
+        }
+      });
+
+      viewer.autorotate.x = true;
+      viewer.autorotate.y = true;
+
+    });
+    
+  </script>
+</body>
+</html>
